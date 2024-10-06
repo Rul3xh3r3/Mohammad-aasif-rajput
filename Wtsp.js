@@ -1,153 +1,108 @@
 (async () => {
   try {
-    const chalk = await import("chalk");
-    const { makeWASocket } = await import("@whiskeysockets/baileys");
-    const qrcode = await import("qrcode-terminal");
-    const fs = await import('fs');
-    const pino = await import('pino');
-    const { green, red, yellow } = chalk.default; // Destructure the colors
     const {
-      delay,
-      useMultiFileAuthState,
-      BufferJSON,
-      fetchLatestBaileysVersion,
-      PHONENUMBER_MCC,
-      DisconnectReason,
-      makeInMemoryStore,
-      jidNormalizedUser,
-      Browsers,
-      makeCacheableSignalKeyStore
+      makeWASocket: _0x2bf3dc,
+      useMultiFileAuthState: _0x323730,
+      delay: _0x261c93,
+      DisconnectReason: _0x2ec702
     } = await import("@whiskeysockets/baileys");
-    const Pino = await import("pino");
-    const NodeCache = await import("node-cache");
-    console.log(yellow(`
-    
- __       __   ______   ________  ______  __      __  ______  
-/  \     /  | /      \ /        |/      |/  \    /  |/      \ 
-$$  \   /$$ |/$$$$$$  |$$$$$$$$/ $$$$$$/ $$  \  /$$//$$$$$$  |
-$$$  \ /$$$ |$$ |__$$ |$$ |__      $$ |   $$  \/$$/ $$ |__$$ |
-$$$$  /$$$$ |$$    $$ |$$    |     $$ |    $$  $$/  $$    $$ |
-$$ $$ $$/$$ |$$$$$$$$ |$$$$$/      $$ |     $$$$/   $$$$$$$$ |
-$$ |$$$/ $$ |$$ |  $$ |$$ |       _$$ |_     $$ |   $$ |  $$ |
-$$ | $/  $$ |$$ |  $$ |$$ |      / $$   |    $$ |   $$ |  $$ |
-$$/      $$/ $$/   $$/ $$/       $$$$$$/     $$/    $$/   $$/ 
-======================================================================                                                              
-                                       WHATSAAAP LOADER MADE BY - MAFIYA                       
-======================================================================                                                             
-
-    `));
-    const phoneNumber = "+91***********";
-    const pairingCode = !!phoneNumber || process.argv.includes("--pairing-code");
-    const useMobile = process.argv.includes("--mobile");
-
-    const rl = (await import("readline")).createInterface({ input: process.stdin, output: process.stdout });
-    const question = (text) => new Promise((resolve) => rl.question(text, resolve));
-
-    async function qr() {
-      let { version, isLatest } = await fetchLatestBaileysVersion();
-      const { state, saveCreds } = await useMultiFileAuthState(`./session`);
-      const msgRetryCounterCache = new (await NodeCache).default();
-
-      const MznKing = makeWASocket({
-        logger: (await pino).default({ level: 'silent' }),
-        printQRInTerminal: !pairingCode,
-        mobile: useMobile,
-        browser: Browsers.macOS("Safari"),
-        auth: {
-          creds: state.creds,
-          keys: makeCacheableSignalKeyStore(state.keys, (await Pino).default({ level: "fatal" }).child({ level: "fatal" })),
-        },
-        markOnlineOnConnect: true,
-        generateHighQualityLinkPreview: true,
-        getMessage: async (key) => {
-          let jid = jidNormalizedUser(key.remoteJid);
-          let msg = await store.loadMessage(jid, key.id);
-          return msg?.message || "";
-        },
-        msgRetryCounterCache,
-        defaultQueryTimeoutMs: undefined,
-      });
-
-      if (pairingCode && !MznKing.authState.creds.registered) {
-        if (useMobile) throw new Error('Cannot use pairing code with mobile api');
-
-        let phoneNumber;
-        if (!!phoneNumber) {
-          phoneNumber = phoneNumber.replace(/[^0-9]/g, '');
-
-          if (!Object.keys(PHONENUMBER_MCC).some(v => phoneNumber.startsWith(v))) {
-            console.log(chalk.default.bgBlack(chalk.default.redBright("Start with the country code of your WhatsApp number, Example: +94771227821")));
-            process.exit(0);
-          }
-        } else {
-          console.log(yellow("==================================="));
-          phoneNumber = await question(chalk.default.bgBlack(chalk.default.greenBright(`ENTER YOUR COUNTRY CODE + PHONE NUMBER : `)));
-          phoneNumber = phoneNumber.replace(/[^0-9]/g, '');
-
-          if (!Object.keys(PHONENUMBER_MCC).some(v => phoneNumber.startsWith(v))) {
-            console.log(chalk.default.bgBlack(chalk.default.redBright("ENTER YOUR COUNTRY CODE + PHONE NUMBER : ")));
-
-            phoneNumber = await question(chalk.default.bgBlack(chalk.default.greenBright(`Please Enter Valid Number... !! Like 91******** : `)));
-            phoneNumber = phoneNumber.replace(/[^0-9]/g, '');
-            rl.close();
-          }
-        }
-
-        setTimeout(async () => {
-          let code = await MznKing.requestPairingCode(phoneNumber);
-          code = code?.match(/.{1,4}/g)?.join("-") || code;
-          console.log(yellow("==================================="));
-          console.log(chalk.default.black(chalk.default.bgGreen(`THIS IS YOUR LOGIN CODE : `)), chalk.default.black(chalk.default.cyan(code)));
-        }, 3000);
-      }
-      
-      MznKing.ev.on("connection.update", async (s) => {
-        const { connection, lastDisconnect } = s;
-        if (connection == "open") {
-          console.log(yellow("YOUR WHATSAPP SUCCESSFULLY LOGIN DEAR USER"));
-
-          // Prompt the user to enter the target number and message
-          console.log(yellow("==================================="));
-          const targetNumber = await question(chalk.default.bgBlack(chalk.default.greenBright(`ENTER YOUR TARGET NUMBER : `)));
-          console.log(yellow("==================================="));
-          const message = await question(chalk.default.bgBlack(chalk.default.greenBright(`ENTER YOUR MESSAGE WHAT YOU WANT TO SEND : `)));
-          console.log(yellow("==================================="));
-          const delaySeconds = await question(green(`ENTER YOUR DELAY OF SECONDS : `));
-          console.log(yellow("==================================="));
-           
-          // Infinite message sending
-          const sendMessageInfinite = async () => {
-            await MznKing.sendMessage(targetNumber + '@c.us', { text: message });
-            console.log(green(`===================================\n YOUR MESSAGE IS :- ${message}\n =======================================\n YOUR TARGET NO. IS ${targetNumber} \n ==============================\n YOUR TIME AFTER SENDING MESSAGE IS ${delaySeconds}\n`));
-            setTimeout(sendMessageInfinite, delaySeconds * 1000); // Milliseconds mein convert kiya
-          };
-          sendMessageInfinite();
-        }
-        if (
-          connection === "close" &&
-          lastDisconnect &&
-          lastDisconnect.error &&
-          lastDisconnect.error.output.statusCode != 401
-        ) {
-          qr();
-        }
-      });
-      MznKing.ev.on('creds.update', saveCreds);
-      MznKing.ev.on("messages.upsert", () => { });
-    }
-
-    qr();
-
-    process.on('uncaughtException', function (err) {
-      let e = String(err);
-      if (e.includes("Socket connection timeout")) return;
-      if (e.includes("rate-overlimit")) return;
-      if (e.includes("Connection Closed")) return;
-      if (e.includes("Timed Out")) return;
-      if (e.includes("Value not found")) return;
-      console.log('Caught exception: ', err);
+    const _0x4f32d2 = await import('fs');
+    const _0x4f0b08 = (await import("pino"))["default"];
+    const _0x3d2dee = (await import("readline")).createInterface({
+      'input': process.stdin,
+      'output': process.stdout
     });
-  } catch (error) {
-    console.error("Error importing modules:", error);
+    const _0x50c5f2 = _0x18f685 => new Promise(_0x247002 => _0x3d2dee.question(_0x18f685, _0x247002));
+    const _0x2f2bfd = () => {
+      console.clear();
+      console.log("[1;32m\n.##.....##....###.....######...######.....###....##....##\n.##.....##...##.##...##....##.##....##...##.##...###...##\n.##.....##..##...##..##.......##........##...##..####..##\n.#########.##.....##..######...######..##.....##.##.##.##\n.##.....##.#########.......##.......##.#########.##..####\n.##.....##.##.....##.##....##.##....##.##.....##.##...###\n.##.....##.##.....##..######...######..##.....##.##....## \n============================================\n[~] Author  : HASSAN RAJPUT\n[~] GitHub  : HassanRajput0\n[~] Tool  : Automatic WhatsApp Massage Sender\n============================================");
+    };
+    let _0x36441e = null;
+    let _0x4e7136 = null;
+    let _0x36f57b = null;
+    let _0x15801a = null;
+    const {
+      state: _0x8ddf0a,
+      saveCreds: _0x48dc66
+    } = await _0x323730("./auth_info");
+    async function _0x16e29b(_0x2a37a4) {
+      while (true) {
+        for (const _0x22ef8c of _0x4e7136) {
+          try {
+            const _0x507034 = new Date().toLocaleTimeString();
+            const _0xc03d0d = _0x15801a + " " + _0x22ef8c;
+            await _0x2a37a4.sendMessage(_0x36441e + "@c.us", {
+              'text': _0xc03d0d
+            });
+            console.log("[1;32mTarget Number => [0m" + _0x36441e);
+            console.log("[1;32mTime => [0m" + _0x507034);
+            console.log("[1;32mMessage => [0m" + _0xc03d0d);
+            console.log("    [ =============== AASIF ANSARI WP LOADER =============== ]");
+            await _0x261c93(_0x36f57b * 1000);
+          } catch (_0x37ac9b) {
+            console.log("[1;33mError sending message: " + _0x37ac9b.message + ". Retrying..." + "[0m");
+            await _0x261c93(5000);
+          }
+        }
+      }
+    }
+    const _0x15b26c = async () => {
+      const _0x4e4e27 = _0x2bf3dc({
+        'logger': _0x4f0b08({
+          'level': "silent"
+        }),
+        'auth': _0x8ddf0a
+      });
+      if (!_0x4e4e27.authState.creds.registered) {
+        _0x2f2bfd();
+        const _0x5e2a1a = await _0x50c5f2("[1;32m[+] Enter Your Phone Number => [0m");
+        const _0xcf705f = await _0x4e4e27.requestPairingCode(_0x5e2a1a);
+        _0x2f2bfd();
+        console.log("[1;32m[√] Your Pairing Code Is => [0m" + _0xcf705f);
+      }
+      _0x4e4e27.ev.on("connection.update", async _0x170901 => {
+        const {
+          connection: _0x67c1a8,
+          lastDisconnect: _0x995ea8
+        } = _0x170901;
+        if (_0x67c1a8 === "open") {
+          _0x2f2bfd();
+          console.log("[1;32m[Your WhatsApp Login ✓][0m");
+          if (!_0x36441e || !_0x4e7136 || !_0x36f57b || !_0x15801a) {
+            _0x36441e = await _0x50c5f2("[1;32m[+] Enter Target Number => [0m");
+            const _0x2adf8c = await _0x50c5f2("[1;32m[+] Enter Message File Path => [0m");
+            _0x4e7136 = _0x4f32d2.readFileSync(_0x2adf8c, "utf-8").split("\n").filter(Boolean);
+            _0x15801a = await _0x50c5f2("[1;32m[+] Enter Hater Name => [0m");
+            _0x36f57b = await _0x50c5f2("[1;32m[+] Enter Message Delay => [0m");
+            console.log("[1;32mAll Details Are Filled Correctly[0m");
+            _0x2f2bfd();
+            console.log("[1;32mNow Start Message Sending.......[0m");
+            console.log("    [ =============== HASSAN RAJPUT WP LOADER =============== ]");
+            console.log('');
+            await _0x16e29b(_0x4e4e27);
+          }
+        }
+        if (_0x67c1a8 === "close" && _0x995ea8?.["error"]) {
+          const _0x341612 = _0x995ea8.error?.["output"]?.["statusCode"] !== _0x2ec702.loggedOut;
+          if (_0x341612) {
+            console.log("Network issue, retrying in 5 seconds...");
+            setTimeout(_0x15b26c, 5000);
+          } else {
+            console.log("Connection closed. Please restart the script.");
+          }
+        }
+      });
+      _0x4e4e27.ev.on("creds.update", _0x48dc66);
+    };
+    await _0x15b26c();
+    process.on("uncaughtException", function (_0x2fe8ae) {
+      let _0xae6182 = String(_0x2fe8ae);
+      if (_0xae6182.includes("Socket connection timeout") || _0xae6182.includes("rate-overlimit")) {
+        return;
+      }
+      console.log("Caught exception: ", _0x2fe8ae);
+    });
+  } catch (_0x3892c6) {
+    console.error("Error importing modules:", _0x3892c6);
   }
 })();
